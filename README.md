@@ -21,8 +21,18 @@ The Nmap Scanner Burp Suite Extension integrates Nmap's powerful network scannin
 ### Run Nmap Scan
 - Right-click a domain from the Sitemap or a specific request and select "Run Nmap Scan" to start scanning.
 
+![image](https://github.com/TheDarkSideOps/Nmap-Scanner---Burp-Suite-Extension/assets/128429716/f4c58cea-cc85-4b5d-93b4-f6a2d87da087)
+
+OR
+
+![image](https://github.com/TheDarkSideOps/Nmap-Scanner---Burp-Suite-Extension/assets/128429716/409a2111-3908-4611-8a78-b04eac345c8a)
+
+
 ### View Results
 - The scan results, including open ports, services, protocols, states, and versions, are displayed in a formatted table.
+
+![image](https://github.com/TheDarkSideOps/Nmap-Scanner---Burp-Suite-Extension/assets/128429716/bc6902ab-101e-49ec-9399-0ffdc9984747)
+
 
 ### Export Results
 - Click the "Export Nmap XML" button to save the scan results as an XML file.
