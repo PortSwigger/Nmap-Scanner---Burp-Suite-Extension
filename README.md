@@ -34,6 +34,12 @@ OR
 ![image](https://github.com/TheDarkSideOps/Nmap-Scanner---Burp-Suite-Extension/assets/128429716/bc6902ab-101e-49ec-9399-0ffdc9984747)
 
 
+### View Results on Issues Tab
+- The scan results, including open ports, services, protocols, states, and versions, are displayed in a formatted table.
+
+![image](https://github.com/user-attachments/assets/4516e673-a5dd-40b1-bbc1-1043351a106d)
+
+
 ### Export Results
 - Click the "Export Nmap XML" button to save the scan results as an XML file.
 
