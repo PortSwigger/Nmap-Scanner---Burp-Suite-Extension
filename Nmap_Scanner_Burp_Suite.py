@@ -1,4 +1,5 @@
-from burp import IBurpExtender, IContextMenuFactory, IContextMenuInvocation, ITab
+# Import necessary Burp Suite libraries
+from burp import IBurpExtender, IContextMenuFactory, IContextMenuInvocation, ITab, IScanIssue
 from java.awt import Component, Font, Color
 from java.io import PrintWriter
 from javax.swing import JMenuItem, JScrollPane, JTextArea, JPanel, JButton, JLabel, JFileChooser, JOptionPane
@@ -10,15 +11,20 @@ import re
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     def registerExtenderCallbacks(self, callbacks):
+        # Set extension name
         self._callbacks = callbacks
+        self._helpers = callbacks.getHelpers()
         self._callbacks.setExtensionName("Nmap Scanner")
         
+        # Initialize the standard output and error output
         self._stdout = PrintWriter(callbacks.getStdout(), True)
         self._stderr = PrintWriter(callbacks.getStderr(), True)
         
+        # Create UI components
         self._textarea = JTextArea()
         self._scroll = JScrollPane(self._textarea)
         
+        # Create professional table area
         self._tablearea = JTextArea()
         self._tablescroll = JScrollPane(self._tablearea)
         self._tablearea.setEditable(False)
@@ -29,12 +35,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         
         self._heading = JLabel("Nmap Port Scanner")
         self._heading.setFont(Font("Arial", Font.BOLD, 16))
-        self._heading.setForeground(Color(255, 128, 0))
+        self._heading.setForeground(Color(255, 128, 0))  # Set the title color to orange
         
         self._author = JLabel("Author: @TheDarkSideOps")
         self._author.setFont(Font("Arial", Font.ITALIC, 12))
         self._usage_instructions1 = JLabel("Usage:")
-        self._usage_instructions1.setFont(Font("Arial", Font.BOLD, 12))
+        self._usage_instructions1.setFont(Font("Arial", Font.BOLD, 12))  # Set "Usage:" text to bold
         self._usage_instructions2 = JLabel("1. Right-click the Domain from Sitemap and select 'Run Nmap Scan' to start scanning. OR")
         self._usage_instructions3 = JLabel("2. Right-click a request and select 'Run Nmap Scan' to start scanning")
 
@@ -43,18 +49,20 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self._nmap_command = JLabel("Nmap -A <Domain>")
         self._nmap_command.setFont(Font("Arial", Font.PLAIN, 12))
         
+        # Set layout and bounds
         self._panel.setLayout(None)
-        self._heading.setBounds(10, 30, 500, 30)
-        self._author.setBounds(10, 60, 300, 30)
+        self._heading.setBounds(10, 30, 500, 30)  # Moved down to leave space above
+        self._author.setBounds(10, 60, 300, 30)  # Adjusted positions accordingly
         self._usage_instructions1.setBounds(10, 100, 500, 30)
         self._usage_instructions2.setBounds(10, 130, 780, 30)
         self._usage_instructions3.setBounds(10, 160, 780, 30)
         self._nmap_command_label.setBounds(10, 200, 500, 30)
         self._nmap_command.setBounds(10, 230, 500, 30)
-        self._scroll.setBounds(10, 270, 780, 730)
-        self._tablescroll.setBounds(800, 270, 1377, 730)
-        self._export_button.setBounds(10, 1010, 200, 30)
+        self._scroll.setBounds(10, 270, 780, 730)  # Adjusted positions accordingly
+        self._tablescroll.setBounds(800, 270, 1377, 730)  # Adjusted positions accordingly
+        self._export_button.setBounds(10, 1010, 200, 30)  # Adjusted positions accordingly
         
+        # Add components to panel
         self._panel.add(self._heading)
         self._panel.add(self._author)
         self._panel.add(self._usage_instructions1)
@@ -66,8 +74,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self._panel.add(self._tablescroll)
         self._panel.add(self._export_button)
         
+        # Add custom tab to Burp Suite
         callbacks.addSuiteTab(self)
+        
+        # Register context menu factory
         callbacks.registerContextMenuFactory(self)
+        
+        # Initialize storage for unique scan results
         self.results = {}
     
     def getTabCaption(self):
@@ -84,14 +97,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         return menu_list
     
     def run_nmap_scan(self, event):
+        # Get the selected URL
         selected_messages = self._invocation.getSelectedMessages()
         if selected_messages:
             url = selected_messages[0].getUrl()
             hostname = url.getHost()
             self._hostname = hostname
-            Thread(target=self.run_nmap, args=(hostname,)).start()
+            Thread(target=self.run_nmap, args=(hostname, selected_messages)).start()
     
-    def run_nmap(self, hostname):
+    def run_nmap(self, hostname, selected_messages):
         try:
             self._textarea.setText("Running Nmap scan on: " + hostname + "\n")
             self._tablearea.setText("")
@@ -108,11 +122,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
                 self._textarea.append(line)
                 ip_address = self.parse_nmap_output(line, hostname, open_ports, services, protocols, states, versions, ip_address)
             
+            # Update the command label with the actual command
             self._nmap_command.setText("Nmap -A {}".format(hostname))
             
             process.wait()
             self.update_tablearea()
             self._textarea.append("\nNmap scan completed.")
+            
+            # Raise the Nmap scan results as an info-level issue
+            self.raise_nmap_issue(selected_messages[0], hostname)
         except FileNotFoundError:
             self._textarea.append("Error: Nmap executable not found. Please ensure Nmap is installed and available in the system PATH.")
             JOptionPane.showMessageDialog(None, "Nmap executable not found. Please ensure Nmap is installed and available in the system PATH.", "Error", JOptionPane.ERROR_MESSAGE)
@@ -121,6 +139,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             JOptionPane.showMessageDialog(None, "An error occurred: " + str(e), "Error", JOptionPane.ERROR_MESSAGE)
     
     def parse_nmap_output(self, line, hostname, open_ports, services, protocols, states, versions, ip_address):
+        # Parse the Nmap output to extract useful information
         ip_match = re.search(r"Nmap scan report for (.*) \(([\d\.]+)\)", line)
         if ip_match:
             ip_address = ip_match.group(2)
@@ -142,6 +161,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         return ip_address
     
     def update_tablearea(self):
+        # Update the table area with the scan results
         formatted_results = {}
         for (hostname, ip_address, port), details in self.results.items():
             if (hostname, ip_address) not in formatted_results:
@@ -157,6 +177,31 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
                     hostname, ip_address, port, detail["protocol"], detail["state"], detail["service"], detail["version"])
         
         self._tablearea.setText(table_text)
+    
+    def raise_nmap_issue(self, selected_message, hostname):
+        # Prepare details for the issue
+        service = selected_message.getHttpService()
+        url = selected_message.getUrl()
+        
+        issue_name = "Nmap Port Scan Results"
+        issue_detail = "The following open ports and services were identified during an Nmap scan on {}:\n\n".format(hostname)
+        for (hostname, ip_address, port), details in self.results.items():
+            issue_detail += (
+                "Host: {}\nIP Address: {}\nPort: {}\nProtocol: {}\nState: {}\nService: {}\nVersion: {}\n\n".format(
+                    hostname, ip_address, port, details["protocol"], details["state"], details["service"], details["version"]
+                )
+            )
+        
+        issue = CustomScanIssue(
+            service,
+            url,
+            [selected_message],
+            issue_name,
+            issue_detail,
+            "Information"
+        )
+        # Register the issue with Burp Suite
+        self._callbacks.addScanIssue(issue)
     
     def export_nmap_xml(self, event):
         try:
@@ -177,3 +222,45 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         except Exception as e:
             self._textarea.append("Error: " + str(e))
             JOptionPane.showMessageDialog(None, "An error occurred: " + str(e), "Error", JOptionPane.ERROR_MESSAGE)
+
+class CustomScanIssue(IScanIssue):
+    def __init__(self, http_service, url, http_messages, issue_name, issue_detail, severity):
+        self._http_service = http_service
+        self._url = url
+        self._http_messages = http_messages
+        self._issue_name = issue_name
+        self._issue_detail = issue_detail
+        self._severity = severity
+    
+    def getUrl(self):
+        return self._url
+    
+    def getHttpMessages(self):
+        return self._http_messages
+    
+    def getHttpService(self):
+        return self._http_service
+    
+    def getIssueName(self):
+        return self._issue_name
+    
+    def getIssueType(self):
+        return 0
+    
+    def getSeverity(self):
+        return self._severity
+    
+    def getConfidence(self):
+        return "Certain"
+    
+    def getIssueBackground(self):
+        return "This issue was automatically generated based on the results of an Nmap scan."
+    
+    def getRemediationBackground(self):
+        return None
+    
+    def getIssueDetail(self):
+        return self._issue_detail
+    
+    def getRemediationDetail(self):
+        return "Investigate the exposed services and consider securing or closing unnecessary ports."
