@@ -1,0 +1,13 @@
+Uuid: 9710f65c31044b3794df0767f8f4bd5d
+ExtensionType: 2
+Name: Nmap Scanner
+RepoName: nmap-scanner
+ScreenVersion: 1.0
+SerialVersion: 2
+MinPlatformVersion: 0
+ProOnly: True
+Author: Parth Patel
+ShortDescription: Integrate Nmap into Burp's interface.
+EntryPoint: Nmap_Scanner_Burp_Suite.py
+BuildCommand: 
+SupportedProducts: Pro
